@@ -6,6 +6,8 @@ import (
 	"time"
 )
 
+const passes = 1000
+
 func genTestData(cap int) []int {
 	return rand.Perm(cap)
 }
@@ -59,7 +61,6 @@ func testCappedLengthSetIdxSlice(data []int, passes int) time.Duration {
 }
 
 func main() {
-	passes := 1000
 	for _, d := range []int{100, 1000, 10000, 100000, 1000000} {
 		data := genTestData(d)
 		fmt.Printf("Timing %d passes with %d data size\n", passes, len(data))
