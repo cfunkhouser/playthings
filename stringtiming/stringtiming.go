@@ -3,53 +3,69 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"math/rand"
 	"strings"
 	"time"
 )
 
-func testDirectConcat(passes int, s string) time.Duration {
+const passes = 1000000 // 1 million
+
+var runes = []rune("abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ")
+
+func randString(length int) string {
+	b := make([]rune, length)
+	for i := range b {
+		b[i] = runes[rand.Intn(len(runes))]
+	}
+	return string(b)
+}
+
+func randStringArr(lengthRange, size int) []string {
+	r := make([]string, size)
+	for i := 0; i < size; i++ {
+		r[i] = randString(rand.Intn(lengthRange))
+	}
+	return r
+}
+
+func testDirectConcat(passes int, sa []string) time.Duration {
 	start := time.Now()
 	for i := passes; i >= 0; i-- {
-		_ = s + "_something"
+		var r string
+		for _, s := range sa {
+			r += s
+		}
 	}
 	return time.Since(start) / time.Duration(passes)
 }
 
-func testBuffer(passes int, s string) time.Duration {
+func testBuffer(passes int, sa []string) time.Duration {
 	start := time.Now()
 	for i := passes; i >= 0; i-- {
 		var b bytes.Buffer
-		b.WriteString(s)
-		b.WriteString("_something")
+		for _, s := range sa {
+			b.WriteString(s)
+		}
 		_ = b.String()
 	}
 	return time.Since(start) / time.Duration(passes)
 }
 
-func testSprintf(passes int, s string) time.Duration {
+func testArrayJoin(passes int, sa []string) time.Duration {
 	start := time.Now()
 	for i := passes; i >= 0; i-- {
-		_ = fmt.Sprintf("%s_something", s)
-	}
-	return time.Since(start) / time.Duration(passes)
-}
-
-func testArrayJoin(passes int, s string) time.Duration {
-	start := time.Now()
-	for i := passes; i >= 0; i-- {
-		a := []string{s, "_something"}
-		_ = strings.Join(a, "")
+		_ = strings.Join(sa, "")
 	}
 	return time.Since(start) / time.Duration(passes)
 }
 
 func main() {
-	testString := "test_string_or"
-	for _, d := range []int{100, 1000, 10000, 100000, 1000000} {
-		fmt.Printf("Timing %d passes with test string %q\n", d, testString)
-		fmt.Printf("\t+= method took\t\t\t\t%v\n", testDirectConcat(d, "test_string"))
-		fmt.Printf("\tbytes.Buffer method took\t\t%v\n", testBuffer(d, "test_string"))
-		fmt.Printf("\tfmt.Sprintf method\t\t\t%v\n", testSprintf(d, "test_string"))
-		fmt.Printf("\tarray join method\t\t\t%v\n", testArrayJoin(d, "test_string"))
+	// Anything larger than 1000 takes a long time to run, for little benefit.
+	for _, d := range []int{2, 10, 100, 1000} {
+		data := randStringArr(25, d)
+		fmt.Printf("Timing %d passes with %d strings\n", passes, d)
+		fmt.Printf("  += method averaged                %v\n", testDirectConcat(d, data))
+		fmt.Printf("  bytes.Buffer method averaged      %v\n", testBuffer(d, data))
+		fmt.Printf("  strings.Join method averaged      %v\n", testArrayJoin(d, data))
 	}
 }
